@@ -1,7 +1,6 @@
 split:
   dataset_path: 'Data/Dataset'
-  test_ratio: 0.1
-  val_ratio: 0.1
+  test_ratio: 0.2
   random_state: 42
 pretrain-embeddings:
   dataset_info_path: 'Data/Dataset/train.json'
@@ -48,31 +47,6 @@ generate-embeddings:
       model_path: '/app/Data/Pretrained_Models/codet5p-110m-embedding'
       batch_size: 4
       padding: true
-
-  - dataset_info_path: 'Data/Dataset/val.json'
-    preprocessing_workers: 8
-    w2v:
-      destination_dir: 'Data/Embeddings/w2v/val'
-      model_path: 'Data/Models/w2v/w2v.model'
-    tfidf:
-      destination_dir: 'Data/Embeddings/tfidf/val'
-      model_path: 'Data/Models/tfidf/tfidf.model'
-    safe:
-      destination_dir: 'Data/Embeddings/safe/val'
-      model_path: '/app/Data/Pretrained_Models/safe/safe_trained_X86.pb'
-      instr_conv_path: '/app/Data/Pretrained_Models/safe/i2v/word2id.json'
-      max_instr: 150
-    unixcoder:
-      destination_dir: 'Data/Embeddings/unixcoder/val'
-      model_path: '/app/Data/Pretrained_Models/unixcoder-base'
-      batch_size: 4
-      max_length: 512
-      padding: true
-    codet5plus:
-      destination_dir: 'Data/Embeddings/codet5plus/val'
-      model_path: '/app/Data/Pretrained_Models/codet5p-110m-embedding'
-      batch_size: 4
-      padding: true
     
   - dataset_info_path: 'Data/Dataset/test.json'
     preprocessing_workers: 8
@@ -98,4 +72,23 @@ generate-embeddings:
       model_path: '/app/Data/Pretrained_Models/codet5p-110m-embedding'
       batch_size: 4
       padding: true
+
+plot-score-per-samples:
+    number_shuffles: 5
+    train:
+        dataset_info_path: 'Data/Dataset/train.json'
+        embeddings_path:
+           w2v: 'Data/Embeddings/w2v/train/embeddings.parquet'
+           tfidf: 'Data/Embeddings/tfidf/train/embeddings.parquet'
+           safe: 'Data/Embeddings/safe/train/embeddings.parquet'
+           unixcoder: 'Data/Embeddings/unixcoder/train/embeddings.parquet'
+           codet5plus: 'Data/Embeddings/codet5plus/train/embeddings.parquet'
+    test:
+        dataset_info_path: 'Data/Dataset/test.json'
+        embeddings_path:
+           w2v: 'Data/Embeddings/w2v/test/embeddings.parquet'
+           tfidf: 'Data/Embeddings/tfidf/test/embeddings.parquet'
+           safe: 'Data/Embeddings/safe/test/embeddings.parquet'
+           unixcoder: 'Data/Embeddings/unixcoder/test/embeddings.parquet'
+           codet5plus: 'Data/Embeddings/codet5plus/test/embeddings.parquet'
     

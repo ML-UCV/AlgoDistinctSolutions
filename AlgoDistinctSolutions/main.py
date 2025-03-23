@@ -34,14 +34,15 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description='Code embeddings in the context of different solutions in a competitive programming problem')
 
         # parser.add_argument('--statistics', dest='statisticsType', action = 'append', choices=['dataset', 'incremental_tfidf'], help='Get statistics based on the choice (dataset, source code, results)')
-        parser.add_argument('--split', action='store_true', help='Split dataset in train / val / test')
-        parser.add_argument('--pretrain-embeddings', action='store_true', help='Pretrain w2v embeddings and tfidf. In case of c2v, we generate just the dictionary of tokens')
+        parser.add_argument('--split', action='store_true', help='Split dataset in train / test')
+        parser.add_argument('--pretrain-embeddings', action='store_true', help='Pretrain w2v embeddings and tfidf.')
         parser.add_argument('--generate-embeddings', action='store_true', help='Computes the embeddings for datasets')
+        parser.add_argument('--plot-score-per-samples', action = 'store_true', help = 'Determine how classifier metrics evolve based on number of samples used')
         # parser.add_argument('--evaluate', action='store_true', help='Evaluates how well the embeddings contribute in the distinct solutions problem')
         # parser.add_argument('--evaluate-k-selection', action='store_true', help='Evaluates how well the embeddings contribute to determining the optimal number k')
 
        
-        args = parser.parse_args(['--generate-embeddings'])
+        args = parser.parse_args(['--plot-score-per-samples'])
 
         # algoLabelHelper = AlgoLabelHelper()
         # statisticsHelper = StatisticsHelper()
@@ -57,6 +58,8 @@ if __name__ == '__main__':
 
         if(args.generate_embeddings is True):
                 steps.generate_embeddings(parameters['generate-embeddings'])
+        if(args.plot_score_per_samples is True):
+                steps.plot_score_per_samples(parameters['plot-score-per-samples'])
 
         # if(args.evaluate is True):
         #     validationPipelines = ValidationPipelines()
