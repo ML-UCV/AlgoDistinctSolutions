@@ -91,4 +91,35 @@ plot-score-per-samples:
            safe: 'Data/Embeddings/safe/test/embeddings.parquet'
            unixcoder: 'Data/Embeddings/unixcoder/test/embeddings.parquet'
            codet5plus: 'Data/Embeddings/codet5plus/test/embeddings.parquet'
+
+validate:
+  destination_dir: 'Data/Validation'
+  train:
+        dataset_info_path: 'Data/Dataset/train.json'
+        embeddings_path:
+           w2v: 'Data/Embeddings/w2v/train/embeddings.parquet'
+           tfidf: 'Data/Embeddings/tfidf/train/embeddings.parquet'
+           safe: 'Data/Embeddings/safe/train/embeddings.parquet'
+           unixcoder: 'Data/Embeddings/unixcoder/train/embeddings.parquet'
+           codet5plus: 'Data/Embeddings/codet5plus/train/embeddings.parquet'
+  test:
+      dataset_info_path: 'Data/Dataset/test.json'
+      embeddings_path:
+          w2v: 'Data/Embeddings/w2v/test/embeddings.parquet'
+          tfidf: 'Data/Embeddings/tfidf/test/embeddings.parquet'
+          safe: 'Data/Embeddings/safe/test/embeddings.parquet'
+          unixcoder: 'Data/Embeddings/unixcoder/test/embeddings.parquet'
+          codet5plus: 'Data/Embeddings/codet5plus/test/embeddings.parquet'
+  parameters:
+    embeddings:
+      - w2v
+      - tfidf
+      - safe
+      # - unixcoder
+      # - codet5plus
+    clustering_algos:
+      - kmeans
+      - spectral_clustering
+      - agglomerative_clustering
+          
     

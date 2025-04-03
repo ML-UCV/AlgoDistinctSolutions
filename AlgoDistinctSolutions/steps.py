@@ -13,11 +13,14 @@ from model_facades.CodeT5plusFacade import CodeT5plusFacade
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-from utils import load_dataset_with_embeddings, shuffle_arrays
+from utils import load_dataset_with_embeddings, shuffle_arrays, find_cluster_labels_best_f1_score, powerset, all_products
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
-
+import copy
+from methods.hard_clustering import HardClustering
+from methods.multiview_spectral_clustering import MultiViewSpectralClustering
+from methods.unsupervised_voting import UnsupervisedVoting
 
 logger = logging.getLogger()
 
@@ -216,6 +219,159 @@ def plot_score_per_samples(args:dict[str,Any]):
         problem_test_dataset = test_dataset[p]
 
         plot(problem_train_dataset, problem_test_dataset, list(train_embeddings_path.keys()), p)
+
+
+
+
+def validate_hard_clustering(samples, embeddings, clustering_algos):
+    print('Validating hard clustering')
+    df = {"embeddings":[],
+          "f1_score": [],
+          "size":[]}
+    
+    true_labels = [s['algorithmic_solution'] for s in samples]
+    k = len(set(true_labels))
+
+    cache_embeddings_cluster = {}
+    for e in embeddings:
+        cache_embeddings_cluster[e] = {}
+        samples_per_embeddings = [s['embeddings'][e] for s in samples]
+        samples_per_embeddings = np.array(samples_per_embeddings)
+        
+        for c in clustering_algos:
+            hc = HardClustering()
+            predicted_labels = hc.fit_predict(samples_per_embeddings, k, c)
+
+            cache_embeddings_cluster[e][c] = predicted_labels
+            best_labels =  find_cluster_labels_best_f1_score(true_labels, predicted_labels)
+
+            f1_score_p = f1_score(true_labels, best_labels, average = 'macro')
+            print(f"Using embedding {e} with clustering method {c} with f1-score {f1_score_p}")
+
+            df['embeddings'].append(c)
+            df['f1_score'].append(f1_score_p)
+            df['size'].append(len(true_labels))
+
+    return cache_embeddings_cluster, df
+
+def validate_multiview_spectral_clustering(samples, embeddings):
+    print('Validating multiview spectral clustering')
+    df = {"embeddings":[],
+          "f1_score": [],
+          "size":[]}
+    
+    true_labels = [s['algorithmic_solution'] for s in samples]
+    k = len(set(true_labels))
+
+    for view_embeddings in powerset(embeddings):
+        samples_per_embeddings = [np.array([s['embeddings'][e]  for s in samples]) for e in view_embeddings]
+        embeddings_as_string = "/".join(view_embeddings)
+        
+        mvsc = MultiViewSpectralClustering()
+        predicted_labels = mvsc.fit_predict(samples_per_embeddings, k)
+        best_labels =  find_cluster_labels_best_f1_score(true_labels, predicted_labels)
+
+        f1_score_p = f1_score(true_labels, best_labels, average = 'macro')
+        print(f"Using embeddings as views {embeddings_as_string} with f1-score {f1_score_p}")
+
+        df['embeddings'].append(embeddings_as_string)
+        df['f1_score'].append(f1_score_p)
+        df['size'].append(len(true_labels))
+    
+    return df
+
+def validate_unsupervised_voting(samples, embeddings, clusterings, cache_embeddings_cluster):
+    print('Validating unsupervised clustering')
+    true_labels = [s['algorithmic_solution'] for s in samples]
+    k = len(set(true_labels))
+
+    df = {"embeddings":[],
+          "clusterings":[],
+          "subset_size":[],
+          "f1_score_subset": [],
+          "cotraining_size":[],
+          "f1_score_cotraining": [],
+          "size":[]}
+    for view_embeddings in powerset(embeddings):
+        for view_clusterings in all_products(clusterings):
+            samples_emb_views = [np.array([s['embeddings'][e]  for s in samples]) for e in view_embeddings]
+
+            embeddings_as_string = "/".join(view_embeddings)
+            clusterings_as_string = "/".join(view_clusterings)
+
+            samples_clustering_views = []
+
+            for e, c in zip(view_embeddings, view_clusterings):
+                samples_clustering_views.append(cache_embeddings_cluster[e][c])
+            
+            samples_clustering_views = np.array(samples_clustering_views).T
+            
+            uv = UnsupervisedVoting()
+
+            clusters_subset, indices_subset, predicted_labels_cotraining, indices_cotraining = uv.fit_predict(samples_emb_views, samples_clustering_views, k)
+
+            true_labels_subset = [true_labels[ind] for ind in indices_subset]
+            best_labels_subset =  find_cluster_labels_best_f1_score(true_labels_subset, clusters_subset)
+            mapping = {c:b for c, b in zip(clusters_subset, best_labels_subset)}
+
+            f1_score_subset = f1_score(true_labels_subset, best_labels_subset, average = 'macro')
+
+            true_labels_cotraining = [true_labels[ind] for ind in indices_cotraining]
+            predicted_labels_cotraining = [mapping[p] for p in predicted_labels_cotraining]
+
+            f1_score_cotraining = f1_score(true_labels_cotraining, predicted_labels_cotraining, average = 'macro')
+
+            print(f"Using embeddings as views {embeddings_as_string} and clusterings {clusterings_as_string} with f1-score subset {f1_score_subset} and subset size {len(indices_subset)} and f1-score cotraining {f1_score_cotraining} and cotraining size {len(indices_cotraining)}")
+
+            df['embeddings'].append(embeddings_as_string)
+            df['clusterings'].append(clusterings_as_string)
+            df['subset_size'].append(len(indices_subset))
+            df['f1_score_subset'].append(f1_score_subset)
+            df['cotraining_size'].append(len(indices_cotraining))
+            df['f1_score_cotraining'].append(f1_score_cotraining)
+            df['size'].append(len(true_labels))
+    return df     
+
+def validate(args:dict[str, Any]):
+    os.makedirs(args['destination_dir'], exist_ok= True)
+
+    np.random.seed(42)
+    train_args = args['train']
+
+    train_dataset_path = train_args['dataset_info_path']
+    train_embeddings_path = train_args['embeddings_path']
+
+    train_dataset = load_dataset_with_embeddings(train_dataset_path, train_embeddings_path)
+
+    test_args = args['test']
+
+    test_dataset_path = test_args['dataset_info_path']
+    test_embeddings_path = test_args['embeddings_path']
+
+    test_dataset = load_dataset_with_embeddings(test_dataset_path, test_embeddings_path)
+
+    dataset = copy.deepcopy(train_dataset)
+
+    for k, v in test_dataset.items():
+        dataset[k].extend(v)
+
+    for problem_name,  samples in dataset.items():
+        print(f"Validating problem {problem_name}")
+        cache_hard_clustering, hard_clustering_df = validate_hard_clustering(samples, args['parameters']['embeddings'], args['parameters']['clustering_algos'])
+        multi_view_clustering_df =  validate_multiview_spectral_clustering(samples, args['parameters']['embeddings'])
+        unsupervised_voting_df = validate_unsupervised_voting(samples, args['parameters']['embeddings'], args['parameters']['clustering_algos'], cache_hard_clustering)
+
+        hard_clustering_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_hard_clustering.csv'))
+        multi_view_clustering_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_multi_view_clustering.csv'))
+        unsupervised_voting_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_unsupervised_voting.csv'))
+
+
+
+
+
+
+
+
 
 
     

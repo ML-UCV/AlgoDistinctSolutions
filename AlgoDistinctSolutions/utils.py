@@ -5,6 +5,9 @@ import json
 import parquet
 import pandas as pd
 import numpy as np
+from itertools import chain, combinations, product, permutations
+from sklearn.metrics import f1_score
+from itertools import product
 
 def _func_with_idx(el_with_func_idx):
     idx, el, func = el_with_func_idx
@@ -89,6 +92,34 @@ def shuffle_arrays(*arr):
     np.random.shuffle(indices)
 
     return [a[indices] for a in list_arr]
-    
 
+def powerset(iterable):
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(2, len(s)+1))
+
+def all_products(iterable):
+    s = list(iterable)
+    return product(s, repeat=len(s))
+
+def find_cluster_labels_best_f1_score(true_labels, predicted_labels):
+    if len(true_labels) != len(predicted_labels):
+        raise Exception("Should have the same number of samples")
     
+    all_true_labels = list(set(true_labels))
+    all_predicted_labels = list(set(predicted_labels))
+
+    # if len(all_true_labels) != len(all_predicted_labels):
+    #     raise Exception("Should have the same number of labels")
+    
+    best_score = -1
+    for p in permutations(all_predicted_labels):
+        mapping = {k:v for k,v in zip(p, all_true_labels)}
+
+        permutated_predicted_labels = list(map(lambda x: mapping[x], predicted_labels))
+
+        score = f1_score(true_labels, permutated_predicted_labels, average='macro')
+        if score > best_score:
+            best_score = score
+            best_predicted_labels = permutated_predicted_labels
+    
+    return best_predicted_labels
