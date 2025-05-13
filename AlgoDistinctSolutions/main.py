@@ -33,7 +33,6 @@ if __name__ == '__main__':
         parser.add_argument('--plot-score-per-samples', action = 'store_true', help = 'Determine how classifier metrics evolve based on number of samples used')
         parser.add_argument('--validate', action='store_true', help='Validates all the methods')
 
-       
         args = parser.parse_args(['--validate'])
 
         if args.split:

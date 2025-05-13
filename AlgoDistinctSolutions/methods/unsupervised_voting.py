@@ -2,6 +2,7 @@ import copy
 import numpy as np
 from typing import Literal
 from xgboost import XGBClassifier
+from sklearn.utils import class_weight
 
 class _Node:
     def __init__(self, cluster):
@@ -112,12 +113,13 @@ class _CoTraining():
         unlabelled_indices = [ui for ui in unlabelled_indices]
 
         while len(unlabelled_indices) > 0:
+            sample_weights = class_weight.compute_sample_weight('balanced', y = subset_labels)
             classifiers = [XGBClassifier(seed = 42) for v in emb_views]
 
             predicted_solutions =[]
             for v in range(len(classifiers)):
                 emb_v = [emb_views[v][si] for si in subset_indices]
-                classifiers[v].fit(np.array(emb_v), np.array(subset_labels))
+                classifiers[v].fit(np.array(emb_v), np.array(subset_labels), sample_weight = sample_weights)
 
                 unl_v = [emb_views[v][ui] for ui in unlabelled_indices]
                 predicted_solutions.append(classifiers[v].predict(np.array(unl_v)))
@@ -126,14 +128,14 @@ class _CoTraining():
 
             new_unlabelled_indices = []
 
-            for idx, p_s_v in enumerate(predicted_solutions_views):
+            for idx, p_s_v in zip(unlabelled_indices, predicted_solutions_views):
                 agg = self._get_agreement(p_s_v)
                 if agg is None:
                     new_unlabelled_indices.append(idx)
                 else:
                     subset_indices.append(idx)
                     subset_labels.append(agg)
-            
+
             if len(unlabelled_indices) - len(new_unlabelled_indices) < self.threshold:
                 print('Stopping from cotraining')
                 break
@@ -141,7 +143,7 @@ class _CoTraining():
                 print(f'{len(unlabelled_indices) - len(new_unlabelled_indices)} samples added via cotraining. {len(new_unlabelled_indices)} left')
             unlabelled_indices = new_unlabelled_indices
 
-        return subset_labels, subset_indices
+        return subset_indices, subset_labels
 
 
 class UnsupervisedVoting():
@@ -172,9 +174,9 @@ class UnsupervisedVoting():
             unlabelled_indices = [ind for ind in range(len(embeddings_view[0])) if ind not in subset_indices_as_set]
 
             cotraining = _CoTraining()
-            predicted_labels_cotraining, indices_cotraining =  cotraining.fit_predict(embeddings_view, subset_indices, subset_clusters, unlabelled_indices)
+            indices_cotraining, predicted_labels_cotraining  =  cotraining.fit_predict(embeddings_view, subset_indices, subset_clusters, unlabelled_indices)
 
-            return subset_clusters, subset_indices, predicted_labels_cotraining, indices_cotraining
+            return list(subset_clusters), subset_indices, predicted_labels_cotraining, indices_cotraining
 
             
 

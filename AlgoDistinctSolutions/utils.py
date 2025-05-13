@@ -8,6 +8,9 @@ import numpy as np
 from itertools import chain, combinations, product, permutations
 from sklearn.metrics import f1_score
 from itertools import product
+import time
+from sklearn.metrics import classification_report, confusion_matrix
+from scipy.optimize import linear_sum_assignment
 
 def _func_with_idx(el_with_func_idx):
     idx, el, func = el_with_func_idx
@@ -66,8 +69,7 @@ def load_dataset_with_embeddings(dataset_path:str, embeddings_path: dict[str, st
                 sample['embeddings'][e_name] = emb
 
     dataset  = [d for d in dataset if 'embeddings' in d]      
-    dataset = [d for d in dataset if len(d['embeddings']) == len(embeddings_path.keys())]
-
+    dataset = [d for d in dataset if len(set(embeddings_path.keys()).difference(d['embeddings'].keys())) == 0]
 
     dataset_per_problem = {}
 
@@ -91,35 +93,45 @@ def shuffle_arrays(*arr):
     indices = np.array(range(n_rows))
     np.random.shuffle(indices)
 
-    return [a[indices] for a in list_arr]
+    return [[a[idx] for idx in indices] for a in list_arr]
 
-def powerset(iterable):
+def powerset(iterable, max_size = -1):
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(2, len(s)+1))
+    if max_size == -1:
+        return chain.from_iterable(combinations(s, r) for r in range(2, len(s)+1))
+    else:
+        return chain.from_iterable(combinations(s, r) for r in range(2, max_size + 1))
 
-def all_products(iterable):
+def all_products(iterable, repeat):
     s = list(iterable)
-    return product(s, repeat=len(s))
+    return product(s, repeat=repeat)
 
-def find_cluster_labels_best_f1_score(true_labels, predicted_labels):
+def find_best_cluster_mapping(true_labels:list[int], predicted_labels:list[int]):
     if len(true_labels) != len(predicted_labels):
         raise Exception("Should have the same number of samples")
     
-    all_true_labels = list(set(true_labels))
-    all_predicted_labels = list(set(predicted_labels))
+    true_labels = list(true_labels)
+    predicted_labels = list(predicted_labels)
 
-    # if len(all_true_labels) != len(all_predicted_labels):
-    #     raise Exception("Should have the same number of labels")
+    cm = confusion_matrix(true_labels, predicted_labels)
+
+    matching = linear_sum_assignment(cm, maximize = True)
+
+    best_mapping = {y:x for x,y in zip(matching[0], matching[1])}
+
+    return best_mapping
+
+def execute_function_with_retries(func, max_retries:int = 3):
+    current_retries = 0
+
+    while current_retries < max_retries:
+        try:
+            result = func()
+            return result
+        except Exception as e:
+            print(f"Exception {e}. Retrying...")
+            time.sleep(current_retries * 1)
+            
+            current_retries+=1
     
-    best_score = -1
-    for p in permutations(all_predicted_labels):
-        mapping = {k:v for k,v in zip(p, all_true_labels)}
-
-        permutated_predicted_labels = list(map(lambda x: mapping[x], predicted_labels))
-
-        score = f1_score(true_labels, permutated_predicted_labels, average='macro')
-        if score > best_score:
-            best_score = score
-            best_predicted_labels = permutated_predicted_labels
-    
-    return best_predicted_labels
+    raise Exception("Too many retries!")

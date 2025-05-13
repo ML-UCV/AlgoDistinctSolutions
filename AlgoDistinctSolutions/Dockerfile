@@ -35,5 +35,7 @@ COPY dependencies  AlgoDistinctSolutions/dependencies
 RUN pip install --no-cache-dir AlgoDistinctSolutions/dependencies/safe
 RUN pip install --no-cache-dir AlgoDistinctSolutions/dependencies/unixcoder
 
+RUN pip install xgboost openai multiview google-genai
+
 
 COPY . AlgoDistinctSolutions

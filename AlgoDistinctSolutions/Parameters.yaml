@@ -47,6 +47,12 @@ generate-embeddings:
       model_path: '/app/Data/Pretrained_Models/codet5p-110m-embedding'
       batch_size: 4
       padding: true
+    openai:
+      destination_dir: 'Data/Embeddings/openai/train'
+      model_name: 'text-embedding-3-small'
+    mistral:
+      destination_dir: 'Data/Embeddings/mistral/train'
+      model_name: 'mistral-embed'
     
   - dataset_info_path: 'Data/Dataset/test.json'
     preprocessing_workers: 8
@@ -72,6 +78,12 @@ generate-embeddings:
       model_path: '/app/Data/Pretrained_Models/codet5p-110m-embedding'
       batch_size: 4
       padding: true
+    openai:
+      destination_dir: 'Data/Embeddings/openai/test'
+      model_name: 'text-embedding-3-small'
+    mistral:
+      destination_dir: 'Data/Embeddings/mistral/test'
+      model_name: 'mistral-embed'
 
 plot-score-per-samples:
     number_shuffles: 5
@@ -83,6 +95,8 @@ plot-score-per-samples:
            safe: 'Data/Embeddings/safe/train/embeddings.parquet'
            unixcoder: 'Data/Embeddings/unixcoder/train/embeddings.parquet'
            codet5plus: 'Data/Embeddings/codet5plus/train/embeddings.parquet'
+           openai: 'Data/Embeddings/openai/train/embeddings.parquet'
+           mistral: 'Data/Embeddings/mistral/train/embeddings.parquet'
     test:
         dataset_info_path: 'Data/Dataset/test.json'
         embeddings_path:
@@ -91,6 +105,8 @@ plot-score-per-samples:
            safe: 'Data/Embeddings/safe/test/embeddings.parquet'
            unixcoder: 'Data/Embeddings/unixcoder/test/embeddings.parquet'
            codet5plus: 'Data/Embeddings/codet5plus/test/embeddings.parquet'
+           openai: 'Data/Embeddings/openai/test/embeddings.parquet'
+           mistral: 'Data/Embeddings/mistral/test/embeddings.parquet'
 
 validate:
   destination_dir: 'Data/Validation'
@@ -102,6 +118,8 @@ validate:
            safe: 'Data/Embeddings/safe/train/embeddings.parquet'
            unixcoder: 'Data/Embeddings/unixcoder/train/embeddings.parquet'
            codet5plus: 'Data/Embeddings/codet5plus/train/embeddings.parquet'
+           openai: 'Data/Embeddings/openai/train/embeddings.parquet'
+           mistral: 'Data/Embeddings/mistral/train/embeddings.parquet'
   test:
       dataset_info_path: 'Data/Dataset/test.json'
       embeddings_path:
@@ -110,13 +128,17 @@ validate:
           safe: 'Data/Embeddings/safe/test/embeddings.parquet'
           unixcoder: 'Data/Embeddings/unixcoder/test/embeddings.parquet'
           codet5plus: 'Data/Embeddings/codet5plus/test/embeddings.parquet'
+          openai: 'Data/Embeddings/openai/test/embeddings.parquet'
+          mistral: 'Data/Embeddings/mistral/test/embeddings.parquet'
   parameters:
     embeddings:
       - w2v
       - tfidf
       - safe
-      # - unixcoder
-      # - codet5plus
+      - openai
+      - mistral
+      - unixcoder
+      - codet5plus
     clustering_algos:
       - kmeans
       - spectral_clustering
