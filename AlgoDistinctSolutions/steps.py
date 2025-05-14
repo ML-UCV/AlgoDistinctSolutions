@@ -256,7 +256,7 @@ def plot_score_per_samples(args:dict[str,Any]):
 
         axes.set_title(problem_name)
         axes.set_xlabel("Ratio of samples")
-        axes.set_xlabel("F1-score")
+        axes.set_ylabel("F1-score")
 
     
     fig, axes = plt.subplots(len(problems) // 5 + (len(problems) % 5 != 0), 5, figsize = (16, 9), sharex=True, sharey=True)
@@ -277,7 +277,8 @@ def plot_score_per_samples(args:dict[str,Any]):
 
 def validate_hard_clustering(samples, embeddings, clustering_algos):
     print('Validating hard clustering')
-    df = {"embeddings":[],
+    df = {"clustering":[],
+          "embeddings":[],
           "f1_score": [],
           "size":[]}
     
@@ -306,7 +307,8 @@ def validate_hard_clustering(samples, embeddings, clustering_algos):
             f1_score_p = f1_score(true_labels, predicted_mapped_labels, average = 'macro')
             print(f"Using embedding {e} with clustering method {c} with f1-score {f1_score_p}")
 
-            df['embeddings'].append(c)
+            df['clustering'].append(c)
+            df['embeddings'].append(e)
             df['f1_score'].append(f1_score_p)
             df['size'].append(len(true_labels))
     df = pd.DataFrame(df)
@@ -473,15 +475,14 @@ def validate(args:dict[str, Any]):
         dataset[k].extend(v)
 
     for problem_name,  samples in dataset.items():
-        if problem_name in ['strmatch', 'swap', 'villages']:
-            print(f"Validating problem {problem_name}")
-            cache_hard_clustering, hard_clustering_df = validate_hard_clustering(samples, args['parameters']['embeddings'], args['parameters']['clustering_algos'])
-            multi_view_clustering_df =  validate_multiview_spectral_clustering(samples, args['parameters']['embeddings'])
-            unsupervised_voting_df = validate_unsupervised_voting(samples, args['parameters']['embeddings'], args['parameters']['clustering_algos'], cache_hard_clustering)
+        print(f"Validating problem {problem_name}")
+        cache_hard_clustering, hard_clustering_df = validate_hard_clustering(samples, args['parameters']['embeddings'], args['parameters']['clustering_algos'])
+        multi_view_clustering_df =  validate_multiview_spectral_clustering(samples, args['parameters']['embeddings'])
+        unsupervised_voting_df = validate_unsupervised_voting(samples, args['parameters']['embeddings'], args['parameters']['clustering_algos'], cache_hard_clustering)
 
-            hard_clustering_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_hard_clustering.csv'))
-            multi_view_clustering_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_multi_view_clustering.csv'))
-            unsupervised_voting_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_unsupervised_voting.csv'))
+        hard_clustering_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_hard_clustering.csv'))
+        multi_view_clustering_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_multi_view_clustering.csv'))
+        unsupervised_voting_df.to_csv(os.path.join(args['destination_dir'], f'{problem_name}_unsupervised_voting.csv'))
 
 
 
