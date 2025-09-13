@@ -24,8 +24,8 @@ Metadata available for each sample in Dataset.json:
 The repository provides a Dockerfile and is meant to be run as a devcontainer, in order to be reproducible. Clone the repository to a folder and run the following commannd `docker compose up`. 
 The repository provides 5 commands that are available in `main.py`:
 - split - split Dataset.json in train and test folds.
-- pretrain-embeddings - Pretrain W2V and TfIdf on train.json
-- generate-embeddings - Generate embeddings for all available
+- pretrain-embeddings - Pretrain Word2VeC and Tf-IDF on train.json
+- generate-embeddings - Generate embeddings for all available models
 - plot-score-per-sample - Plot for each embedding, what is the validation score on `Test.json` if you train an XGBoost model but use only X samples from `Train.json`
 - validate - Run the entire validation pipeline in order to obtain the scores for each available method.
 
