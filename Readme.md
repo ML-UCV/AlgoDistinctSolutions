@@ -1,38 +1,34 @@
 # AlgoDistinctSolutions
 
-The scope of this repository is to offer a tool in which you can for a given competitive programming problem to split it in K different solutions in terms of algorthmic approach as well as implementation.
+The scope of this repository is to offer a tool in which you can, for a given competitive programming problem, split it in K different solutions in terms of algorthmic approach.
+We propose an multi-view unsupervised voting approach that uses multiple embeddings of the same dataset as views. We select a subset of solutions that is agreed by all the embeddings by clustering each view and converting the problem in a Multidimensional Assigment Problem. We extend the subset by employing a co-training self-learning scheme based on each view of the subset.
 
-It uses AlgoLabel repository (https://github.com/NLCP/AlgoLabel) for it's implementation of various preprocessing steps as well as the integration of some state of the art deep learning models.
+We use the following embeddings: Word2Vec, Tf-IDF, SAFE, UniXcoder, CodeT5+, OpenAI and MistralAI.
 
 ## Manual annotated dataset
-To validate the method, a dataset(AlgoSol-10) which contains 10 problems from infoarena was manually annotated. The raw data as well as the embeddings generated for this problem are available here:
+To validate the method, a dataset(AlgoSol-15) which contains 15 problems from Infoarena was manually annotated. The dataset can be downloaded from here: https://huggingface.co/datasets/Arkimond9620/AlgoSol-15/tree/main.
 
-    AlgoSol-10 (Raw Dataset) (https://drive.google.com/file/d/1mSRGL57389is7r5U70b_5yZ6whTeuWz2/view?usp=sharing)
+The dataset is structured as follows:
+- Each folder from root represents a problem. Each folder from a problem represents a distinct algorithmic solution and contains all the corresponding source codes.
+- Dataset.json - contains metadata for each source code solution
+- Train.json - contains 80% of source codes from Dataset.json per problem
+- Test.json - contains 20% of source codes from Dataset.json per problem.
 
-    Embeddings(https://drive.google.com/file/d/11AUF2HklrWND4_eF18VpMHvYVJTCTyOv/view?usp=sharing)
+Metadata available for each sample in Dataset.json:
+- id - a random guid
+- path - path to the source code
+- problem - problem name
+- algorithmic_solution - label for the algorithmic solution used
 
-Besides this, there is a script available which downloads those 2 files. The script can be run through an argument available in the main.py.
+## How to run
+The repository provides a Dockerfile and is meant to be run as a devcontainer, in order to be reproducible. Clone the repository to a folder and run the following commannd `docker compose up`. 
+The repository provides 5 commands that are available in `main.py`:
+- split - split Dataset.json in train and test folds.
+- pretrain-embeddings - Pretrain W2V and TfIdf on train.json
+- generate-embeddings - Generate embeddings for all available
+- plot-score-per-sample - Plot for each embedding, what is the validation score on `Test.json` if you train an XGBoost model but use only X samples from `Train.json`
+- validate - Run the entire validation pipeline in order to obtain the scores for each available method.
 
-## Prerequirements
-1. Python 3.7.4
-2. You need to download g++
-3. You need to download cppchecker
-4. In the algolabel folder you need to download the safe model. Go into AlgoLabel/safe and run python3 -m downloader.py -b .
-5. You need to install the libraries from requirements.txt. 
+Note that the parameters for each method can be found in `Parameters.yaml`.
 
-## How to run it
-
-The main.py offers an argument parser which can fulfill multiple operations:
-1. Download the embeddings and the raw dataset
-2. Transform the dataset into a format which can be used by AlgoLabel
-3. COmpute the statistics, number of source codes per solution and how many of the sources code can be compiled
-3. Compute the embeddings(tf-idf, w2v, safe) of the preprocessed dataset.
-4. Compute the evalution based on the embeddings. The results from the evaluation step are saved in the Data/Validation in csv format.
-
-## Note
-The entire repository was tested just on WSL2 using the Ubuntu distro. 
-
-
-
-
-
+Note that for OpenAI and MistralAI, one needs to set the following environment variables: OPENAI_API_KEY, MISTRAL_API_KEY.
