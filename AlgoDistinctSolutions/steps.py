@@ -241,7 +241,7 @@ def plot_score_per_samples(args:dict[str,Any]):
             for p in percentiles_values:
                 _, x_percentile_samples, _, y_percentile_samples = train_test_split(train_X, train_Y, test_size=p, stratify=train_Y, random_state=42)
 
-                clf = XGBClassifier()
+                clf = XGBClassifier(random_state = 42)
                 
                 clf.fit(x_percentile_samples, [label2id[y] for y in y_percentile_samples])
 
@@ -259,20 +259,19 @@ def plot_score_per_samples(args:dict[str,Any]):
         axes.set_ylabel("F1-score")
 
     
-    fig, axes = plt.subplots(len(problems) // 5 + (len(problems) % 5 != 0), 5, figsize = (16, 9), sharex=True, sharey=True)
+    fig, axes = plt.subplots(len(problems) // 3 + (len(problems) % 3 != 0), 3, figsize = (12, 9), sharex=True, sharey=True)
 
     for idx, p in enumerate(problems):
         problem_train_dataset = train_dataset[p]
         problem_test_dataset = test_dataset[p]
         
-        plot(axes[idx // 5, idx % 5], problem_train_dataset, problem_test_dataset, list(train_embeddings_path.keys()), p)
-
+        plot(axes[idx // 3, idx % 3], problem_train_dataset, problem_test_dataset, list(train_embeddings_path.keys()), p)
 
     fig.suptitle('F1-scores per ratio of samples used as training')
     handles, labels = axes[0][0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper right')
-    fig.tight_layout()
-    fig.savefig(f'Data/Plots/plot.png')
+    fig.legend(handles, labels, loc='upper center',bbox_to_anchor=(0.5, 0.05),  ncol=len(labels))
+    fig.tight_layout(rect=[0, 0.05, 1, 0.98])
+    fig.savefig(f'Data/Plots/plot.png', dpi = 600)
 
 
 def validate_hard_clustering(samples, embeddings, clustering_algos):
@@ -297,7 +296,7 @@ def validate_hard_clustering(samples, embeddings, clustering_algos):
         
         for c in clustering_algos:
             hc = HardClustering()
-            predicted_labels = hc.fit_predict(samples_per_embeddings, k, c)
+            predicted_labels = hc.fit_predict(samples_per_embeddings, k, c, random_state = 42)
 
             cache_embeddings_cluster[e][c] = predicted_labels
             best_mapping =  find_best_cluster_mapping(true_labels, predicted_labels)
